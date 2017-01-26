@@ -25,16 +25,16 @@ from prediction_input import build_tfrecord_input
 from prediction_model import construct_model
 
 # How often to record tensorboard summaries.
-SUMMARY_INTERVAL = 40
+SUMMARY_INTERVAL = 10  # 40
 
 # How often to run a batch through the validation model.
-VAL_INTERVAL = 200
+VAL_INTERVAL = 10  # 200
 
 # How often to save a model checkpoint
-SAVE_INTERVAL = 2000
+SAVE_INTERVAL = 100  # 2000
 
 # tf record data location:
-DATA_DIR = 'push/push_train'
+DATA_DIR = 'input_data'
 
 # local output directory
 OUT_DIR = '/tmp/data'
@@ -44,14 +44,14 @@ FLAGS = flags.FLAGS
 flags.DEFINE_string('data_dir', DATA_DIR, 'directory containing data.')
 flags.DEFINE_string('output_dir', OUT_DIR, 'directory for model checkpoints.')
 flags.DEFINE_string('event_log_dir', OUT_DIR, 'directory for writing summary.')
-flags.DEFINE_integer('num_iterations', 100000, 'number of training iterations.')
+flags.DEFINE_integer('num_iterations', 1, 'number of training iterations.')   # 100000
 flags.DEFINE_string('pretrained_model', '',
                     'filepath of a pretrained model to initialize from.')
 
 flags.DEFINE_integer('sequence_length', 10,
                      'sequence length, including context frames.')
 flags.DEFINE_integer('context_frames', 2, '# of frames before predictions.')
-flags.DEFINE_integer('use_state', 1,
+flags.DEFINE_integer('use_state', 0,  # 1
                      'Whether or not to give the state+action to the model')
 
 flags.DEFINE_string('model', 'CDNA',
@@ -186,6 +186,9 @@ def main(unused_argv):
   print 'Constructing models and inputs.'
   with tf.variable_scope('model', reuse=None) as training_scope:
     images, actions, states = build_tfrecord_input(training=True)
+    print "images in train", images
+    print actions
+    print states
     model = Model(images, actions, states, FLAGS.sequence_length)
 
   with tf.variable_scope('val_model', reuse=None):
@@ -211,6 +214,7 @@ def main(unused_argv):
 
   tf.logging.info('iteration number, cost')
 
+  print 'training'
   # Run training.
   for itr in range(FLAGS.num_iterations):
     # Generate new batch of data.
