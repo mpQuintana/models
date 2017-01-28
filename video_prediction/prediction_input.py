@@ -22,7 +22,7 @@ import tensorflow as tf
 
 from tensorflow.python.platform import flags
 from tensorflow.python.platform import gfile
-from PIL import Image
+
 
 FLAGS = flags.FLAGS
 
@@ -54,24 +54,11 @@ def build_tfrecord_input(training=True):
   filenames = gfile.Glob(os.path.join(FLAGS.data_dir, '*'))
   if not filenames:
     raise RuntimeError('No data files found.')
-  #index = int.floor(FLAGS.train_val_split * len(filenames)))
+  index = int(np.floor(FLAGS.train_val_split * len(filenames)))
   if training:
-    #filenames = filenames[:index]
-    imArray = np.load('input_data/faces_32_1_train.npy')
+    filenames = filenames[0:20]
   else:
-    #filenames = filenames[index:]
-    imArray = np.load('input_data/faces_32_1_valid.npy')
-  print 'imArray.shape', imArray.shape
-  im = imArray[0][0][0]
-  w, h = im.shape
-  ret = np.empty((w, h, 3), dtype=np.uint8)
-  ret[:, :, 0] = im
-  ret[:, :, 1] = im
-  ret[:, :, 2] = im
-  img = Image.fromarray(ret, 'RGB')
-  img.save('my.png')
-  img.show()
-  exit()
+    filenames = filenames[30:50]
   filename_queue = tf.train.string_input_producer(filenames, shuffle=True)
   reader = tf.TFRecordReader()
   _, serialized_example = reader.read(filename_queue)
@@ -93,6 +80,7 @@ def build_tfrecord_input(training=True):
     image_buffer = tf.reshape(features[image_name], shape=[])
     image = tf.image.decode_jpeg(image_buffer, channels=COLOR_CHAN)
     image.set_shape([ORIGINAL_HEIGHT, ORIGINAL_WIDTH, COLOR_CHAN])
+
     if IMG_HEIGHT != IMG_WIDTH:
       raise ValueError('Unequal height and width unsupported')
 
@@ -102,18 +90,16 @@ def build_tfrecord_input(training=True):
     image = tf.image.resize_bicubic(image, [IMG_HEIGHT, IMG_WIDTH])
     image = tf.cast(image, tf.float32) / 255.0
     image_seq.append(image)
-    if i==0:
-      print "image in input", image
+
 
     if FLAGS.use_state:
       state = tf.reshape(features[state_name], shape=[1, STATE_DIM])
       state_seq.append(state)
       action = tf.reshape(features[action_name], shape=[1, STATE_DIM])
       action_seq.append(action)
-
+  print "image_seq", image_seq
   image_seq = tf.concat(0, image_seq)
-  print image_seq
-
+  print "image_seq", image_seq
   if FLAGS.use_state:
     state_seq = tf.concat(0, state_seq)
     action_seq = tf.concat(0, action_seq)
@@ -130,5 +116,6 @@ def build_tfrecord_input(training=True):
         num_threads=FLAGS.batch_size,
         capacity=100 * FLAGS.batch_size)
     zeros_batch = tf.zeros([FLAGS.batch_size, FLAGS.sequence_length, STATE_DIM])
+    print "image_batch", image_batch
     return image_batch, zeros_batch, zeros_batch
 

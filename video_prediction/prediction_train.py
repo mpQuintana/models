@@ -34,7 +34,7 @@ VAL_INTERVAL = 10  # 200
 SAVE_INTERVAL = 100  # 2000
 
 # tf record data location:
-DATA_DIR = 'input_data'
+DATA_DIR = 'push/push_train'
 
 # local output directory
 OUT_DIR = '/tmp/data'
@@ -182,15 +182,15 @@ class Model(object):
 
 
 def main(unused_argv):
-
+  tf.logging.set_verbosity(tf.logging.ERROR)
   print 'Constructing models and inputs.'
   with tf.variable_scope('model', reuse=None) as training_scope:
     images, actions, states = build_tfrecord_input(training=True)
     print "images in train", images
     print actions
     print states
+    exit()
     model = Model(images, actions, states, FLAGS.sequence_length)
-
   with tf.variable_scope('val_model', reuse=None):
     val_images, val_actions, val_states = build_tfrecord_input(training=False)
     val_model = Model(val_images, val_actions, val_states,
